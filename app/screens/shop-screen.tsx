@@ -1,10 +1,18 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, SafeAreaView } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { StatusBar } from "expo-status-bar"
-import WhatsAppWidget from "../components/whatsapp-widget"
+import { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  FlatList,
+  SafeAreaView,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import WhatsAppWidget from "../components/whatsapp-widget";
 
 // Sample data
 const categories = [
@@ -12,14 +20,15 @@ const categories = [
   { id: "2", name: "Athletic" },
   { id: "3", name: "Hot Deals" },
   { id: "4", name: "Exclusive" },
-]
+];
 
 const products = [
   {
     id: "1",
     name: "LIGHTWEIGHT RUNNING CASUAL SNEAKERS SHOE",
     price: 250.0,
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tenni.jpg-MxNLFNOPIGovX9C0oQCK3qzVF35Zxd.jpeg",
+    image:
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=640",
     isNew: true,
     category: "Man Sneakers - 7,8",
   },
@@ -28,7 +37,7 @@ const products = [
     name: "URBAN STREET STYLE PREMIUM SNEAKERS",
     price: 199.99,
     image:
-      "https://sjc.microlink.io/65rnUpQJ8Yb-aVCAUoWLMRYyEiaYnxi4yW1A8F-XCYIl_-LOsw1sQ8f9cCR0Xjo18CvBduno7zQUu2cgS5gSwg.jpeg",
+      "https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=640",
     isNew: true,
     category: "Man Sneakers - 8,9",
   },
@@ -36,7 +45,8 @@ const products = [
     id: "3",
     name: "CLASSIC RETRO ATHLETIC SHOES",
     price: 175.5,
-    image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/tenni.jpg-MxNLFNOPIGovX9C0oQCK3qzVF35Zxd.jpeg",
+    image:
+      "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=640",
     isNew: false,
     category: "Man Sneakers - 9,10",
   },
@@ -45,34 +55,42 @@ const products = [
     name: "PREMIUM COMFORT WALKING SHOES",
     price: 220.0,
     image:
-      "https://sjc.microlink.io/65rnUpQJ8Yb-aVCAUoWLMRYyEiaYnxi4yW1A8F-XCYIl_-LOsw1sQ8f9cCR0Xjo18CvBduno7zQUu2cgS5gSwg.jpeg",
+      "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=640",
     isNew: false,
     category: "Man Sneakers - 8,9,10",
   },
-]
+];
 
 const ShopScreen = ({ navigation }) => {
-  const [selectedCategory, setSelectedCategory] = useState("1")
-  const [favorites, setFavorites] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState("1");
+  const [favorites, setFavorites] = useState([]);
 
   const toggleFavorite = (productId) => {
     if (favorites.includes(productId)) {
-      setFavorites(favorites.filter((id) => id !== productId))
+      setFavorites(favorites.filter((id) => id !== productId));
     } else {
-      setFavorites([...favorites, productId])
+      setFavorites([...favorites, productId]);
     }
-  }
+  };
 
   const renderCategoryItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.categoryItem, selectedCategory === item.id && styles.selectedCategoryItem]}
+      style={[
+        styles.categoryItem,
+        selectedCategory === item.id && styles.selectedCategoryItem,
+      ]}
       onPress={() => setSelectedCategory(item.id)}
     >
-      <Text style={[styles.categoryText, selectedCategory === item.id && styles.selectedCategoryText]}>
+      <Text
+        style={[
+          styles.categoryText,
+          selectedCategory === item.id && styles.selectedCategoryText,
+        ]}
+      >
         {item.name}
       </Text>
     </TouchableOpacity>
-  )
+  );
 
   const renderProductItem = ({ item }) => (
     <TouchableOpacity
@@ -84,7 +102,10 @@ const ShopScreen = ({ navigation }) => {
           <Text style={styles.newBadgeText}>New</Text>
         </View>
       )}
-      <TouchableOpacity style={styles.favoriteButton} onPress={() => toggleFavorite(item.id)}>
+      <TouchableOpacity
+        style={styles.favoriteButton}
+        onPress={() => toggleFavorite(item.id)}
+      >
         <Ionicons
           name={favorites.includes(item.id) ? "heart" : "heart-outline"}
           size={24}
@@ -100,14 +121,17 @@ const ShopScreen = ({ navigation }) => {
         <Text style={styles.productCategory}>{item.category}</Text>
       </View>
     </TouchableOpacity>
-  )
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>SHOP</Text>
-        <TouchableOpacity style={styles.searchButton} onPress={() => navigation.navigate("Search")}>
+        <Text style={styles.headerTitle}>KIXORD</Text>
+        <TouchableOpacity
+          style={styles.searchButton}
+          onPress={() => navigation.navigate("Search")}
+        >
           <Ionicons name="search" size={24} color="#000" />
         </TouchableOpacity>
       </View>
@@ -130,10 +154,16 @@ const ShopScreen = ({ navigation }) => {
         contentContainerStyle={styles.productsGrid}
       />
 
-      <WhatsAppWidget phoneNumber="18499275780" />
+      <WhatsAppWidget
+        phoneNumber="18499255780"
+        companyName="KIXORD"
+        message="Hi! I'm interested in your sneakers."
+        position="bottomRight"
+        welcomeMessage="👋 Welcome to KIXORD! How can we help you find the perfect sneakers today?"
+      />
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -251,7 +281,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
   },
-})
+});
 
-export default ShopScreen
-
+export default ShopScreen;

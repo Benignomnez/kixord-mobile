@@ -1,137 +1,174 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, SafeAreaView, Dimensions } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import WhatsAppWidget from "../components/whatsapp-widget"
-import ProductReview from "../components/product-review"
+import { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  FlatList,
+  TouchableOpacity,
+  SafeAreaView,
+  Dimensions,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import WhatsAppWidget from "../components/whatsapp-widget";
+import ProductReview from "../components/product-review";
 
-const { width } = Dimensions.get("window")
+const { width } = Dimensions.get("window");
 
 const ProductDetailScreen = ({ route, navigation }) => {
-  const { product } = route.params
-  const [selectedSize, setSelectedSize] = useState(null)
-  const [selectedColor, setSelectedColor] = useState(null)
-  const [quantity, setQuantity] = useState(1)
-  const [isFavorite, setIsFavorite] = useState(false)
+  const { product } = route.params;
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [isFavorite, setIsFavorite] = useState(false);
 
-  const sizes = ["7", "8", "9", "10", "11"]
+  const sizes = ["7", "8", "9", "10", "11"];
   const colors = [
     { name: "Black", code: "#000000" },
     { name: "White", code: "#FFFFFF" },
     { name: "Red", code: "#E32636" },
-  ]
+  ];
 
-  const incrementQuantity = () => setQuantity(quantity + 1)
+  const incrementQuantity = () => setQuantity(quantity + 1);
   const decrementQuantity = () => {
     if (quantity > 1) {
-      setQuantity(quantity - 1)
+      setQuantity(quantity - 1);
     }
-  }
+  };
 
-  const toggleFavorite = () => setIsFavorite(!isFavorite)
+  const toggleFavorite = () => setIsFavorite(!isFavorite);
+
+  const renderProductContent = () => (
+    <>
+      <Image source={{ uri: product.image }} style={styles.productImage} />
+
+      <View style={styles.detailsContainer}>
+        <View style={styles.header}>
+          <Text style={styles.productName}>{product.name}</Text>
+          <TouchableOpacity
+            onPress={toggleFavorite}
+            style={styles.favoriteButton}
+          >
+            <Ionicons
+              name={isFavorite ? "heart" : "heart-outline"}
+              size={24}
+              color={isFavorite ? "#E32636" : "#000"}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.ratingContainer}>
+          <View style={styles.stars}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Ionicons
+                key={star}
+                name={star <= 4 ? "star" : "star-outline"}
+                size={18}
+                color={star <= 4 ? "#FFD700" : "#999"}
+                style={{ marginRight: 2 }}
+              />
+            ))}
+          </View>
+          <Text style={styles.reviewCount}>(45 Reviews)</Text>
+        </View>
+
+        <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Description</Text>
+          <Text style={styles.description}>
+            Shoe Island Player-X Trendy White Lightweight Running Sports Boys
+            Men Casual Shoes Sneakers For Men. Class. Perfection. In-live.
+            {"\n\n"}
+            Flaunt a minimalistic and stylish statement as you adorn this pair
+            of sneakers by Shoe Island. Featuring a synthetic upper material
+            that ensures comfort and breathability.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Size</Text>
+          <View style={styles.optionsContainer}>
+            {sizes.map((size) => (
+              <TouchableOpacity
+                key={size}
+                style={[
+                  styles.sizeOption,
+                  selectedSize === size && styles.selectedOption,
+                ]}
+                onPress={() => setSelectedSize(size)}
+              >
+                <Text
+                  style={[
+                    styles.sizeText,
+                    selectedSize === size && styles.selectedOptionText,
+                  ]}
+                >
+                  {size}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Color</Text>
+          <View style={styles.optionsContainer}>
+            {colors.map((color) => (
+              <TouchableOpacity
+                key={color.name}
+                style={[
+                  styles.colorOption,
+                  { backgroundColor: color.code },
+                  selectedColor === color.name && styles.selectedColorOption,
+                  color.code === "#FFFFFF" && styles.whiteColorBorder,
+                ]}
+                onPress={() => setSelectedColor(color.name)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quantity</Text>
+          <View style={styles.quantitySelector}>
+            <TouchableOpacity
+              style={styles.quantityButton}
+              onPress={decrementQuantity}
+            >
+              <Ionicons name="remove" size={20} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.quantityText}>{quantity}</Text>
+            <TouchableOpacity
+              style={styles.quantityButton}
+              onPress={incrementQuantity}
+            >
+              <Ionicons name="add" size={20} color="#000" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <ProductReview productId={product.id} />
+      </View>
+    </>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Image source={{ uri: product.image }} style={styles.productImage} />
-
-        <View style={styles.detailsContainer}>
-          <View style={styles.header}>
-            <Text style={styles.productName}>{product.name}</Text>
-            <TouchableOpacity onPress={toggleFavorite} style={styles.favoriteButton}>
-              <Ionicons
-                name={isFavorite ? "heart" : "heart-outline"}
-                size={24}
-                color={isFavorite ? "#E32636" : "#000"}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.ratingContainer}>
-            <View style={styles.stars}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Ionicons
-                  key={star}
-                  name={star <= 4 ? "star" : "star-outline"}
-                  size={18}
-                  color={star <= 4 ? "#FFD700" : "#999"}
-                  style={{ marginRight: 2 }}
-                />
-              ))}
-            </View>
-            <Text style={styles.reviewCount}>(45 Reviews)</Text>
-          </View>
-
-          <Text style={styles.price}>${product.price.toFixed(2)}</Text>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Description</Text>
-            <Text style={styles.description}>
-              Shoe Island Player-X Trendy White Lightweight Running Sports Boys Men Casual Shoes Sneakers For Men.
-              Class. Perfection. In-live.
-              {"\n\n"}
-              Flaunt a minimalistic and stylish statement as you adorn this pair of sneakers by Shoe Island. Featuring a
-              synthetic upper material that ensures comfort and breathability.
-            </Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Size</Text>
-            <View style={styles.optionsContainer}>
-              {sizes.map((size) => (
-                <TouchableOpacity
-                  key={size}
-                  style={[styles.sizeOption, selectedSize === size && styles.selectedOption]}
-                  onPress={() => setSelectedSize(size)}
-                >
-                  <Text style={[styles.sizeText, selectedSize === size && styles.selectedOptionText]}>{size}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Color</Text>
-            <View style={styles.optionsContainer}>
-              {colors.map((color) => (
-                <TouchableOpacity
-                  key={color.name}
-                  style={[
-                    styles.colorOption,
-                    { backgroundColor: color.code },
-                    selectedColor === color.name && styles.selectedColorOption,
-                    color.code === "#FFFFFF" && styles.whiteColorBorder,
-                  ]}
-                  onPress={() => setSelectedColor(color.name)}
-                />
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quantity</Text>
-            <View style={styles.quantitySelector}>
-              <TouchableOpacity style={styles.quantityButton} onPress={decrementQuantity}>
-                <Ionicons name="remove" size={20} color="#000" />
-              </TouchableOpacity>
-              <Text style={styles.quantityText}>{quantity}</Text>
-              <TouchableOpacity style={styles.quantityButton} onPress={incrementQuantity}>
-                <Ionicons name="add" size={20} color="#000" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <ProductReview productId={product.id} />
-        </View>
-      </ScrollView>
+      <FlatList
+        data={[{ key: "content" }]}
+        renderItem={() => renderProductContent()}
+        showsVerticalScrollIndicator={false}
+      />
 
       <View style={styles.footer}>
         <TouchableOpacity
           style={styles.addToCartButton}
           onPress={() => {
             // Add to cart logic would go here
-            navigation.navigate("Cart")
+            navigation.navigate("Cart");
           }}
         >
           <Text style={styles.addToCartText}>Add to cart</Text>
@@ -140,8 +177,8 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
       <WhatsAppWidget phoneNumber="18499275780" />
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -275,7 +312,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-})
+});
 
-export default ProductDetailScreen
-
+export default ProductDetailScreen;

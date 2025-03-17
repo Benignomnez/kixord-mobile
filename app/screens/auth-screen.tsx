@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   View,
   Text,
@@ -12,82 +12,99 @@ import {
   Platform,
   ScrollView,
   Alert,
-} from "react-native"
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
-import { Ionicons } from "@expo/vector-icons"
+} from "react-native";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
+import { Ionicons } from "@expo/vector-icons";
 
 const AuthScreen = () => {
-  const [isLogin, setIsLogin] = useState(true)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const auth = getAuth()
+  const auth = getAuth();
 
   const handleAuth = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields")
-      return
+      Alert.alert("Error", "Please fill in all fields");
+      return;
     }
 
     if (!isLogin && password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match")
-      return
+      Alert.alert("Error", "Passwords do not match");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password)
+        await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password)
+        await createUserWithEmailAndPassword(auth, email, password);
       }
     } catch (error) {
-      let errorMessage = "Authentication failed"
+      console.error("Firebase Auth Error:", error.code, error.message);
+      let errorMessage = "Authentication failed";
       if (error.code === "auth/email-already-in-use") {
-        errorMessage = "This email is already in use"
+        errorMessage = "This email is already in use";
       } else if (error.code === "auth/invalid-email") {
-        errorMessage = "Invalid email address"
+        errorMessage = "Invalid email address";
       } else if (error.code === "auth/weak-password") {
-        errorMessage = "Password should be at least 6 characters"
-      } else if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
-        errorMessage = "Invalid email or password"
+        errorMessage = "Password should be at least 6 characters";
+      } else if (
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/wrong-password"
+      ) {
+        errorMessage = "Invalid email or password";
+      } else if (error.code === "auth/operation-not-allowed") {
+        errorMessage = "Email/password authentication is not enabled";
       }
-      Alert.alert("Error", errorMessage)
+      Alert.alert("Error", `${errorMessage} (${error.code})`);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.logoContainer}>
-          <Image 
-            source={{ uri: 'https://sjc.microlink.io/65rnUpQJ8Yb-aVCAUoWLMRYyEiaYnxi4yW1A8F-XCYIl_-LOsw1sQ8f9cCR0Xjo18CvBduno7zQUu2cgS5gSwg.jpeg' }} 
-            style={styles.logo} 
+          <Image
+            source={{
+              uri: "https://sjc.microlink.io/65rnUpQJ8Yb-aVCAUoWLMRYyEiaYnxi4yW1A8F-XCYIl_-LOsw1sQ8f9cCR0Xjo18CvBduno7zQUu2cgS5gSwg.jpeg",
+            }}
+            style={styles.logo}
             resizeMode="contain"
           />
           <Text style={styles.logoText}>KIXORD</Text>
         </View>
-        
+
         <View style={styles.formContainer}>
-          <Text style={styles.title}>{isLogin ? 'Welcome Back' : 'Create Account'}</Text>
-          <Text style={styles.subtitle}>
-            {isLogin ? 'Sign in to continue' : 'Sign up to get started'}
+          <Text style={styles.title}>
+            {isLogin ? "Welcome Back" : "Create Account"}
           </Text>
-          
+          <Text style={styles.subtitle}>
+            {isLogin ? "Sign in to continue" : "Sign up to get started"}
+          </Text>
+
           <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#999" style={styles.inputIcon} />
-            <TextInput\
-              style={styles.input  color="#999" style={styles.inputIcon} />
+            <Ionicons
+              name="mail-outline"
+              size={20}
+              color="#999"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Email"
@@ -97,9 +114,14 @@ const AuthScreen = () => {
               onChangeText={setEmail}
             />
           </View>
-          
+
           <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color="#999"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Password"
@@ -107,21 +129,26 @@ const AuthScreen = () => {
               value={password}
               onChangeText={setPassword}
             />
-            <TouchableOpacity 
-              style={styles.passwordToggle} 
+            <TouchableOpacity
+              style={styles.passwordToggle}
               onPress={() => setShowPassword(!showPassword)}
             >
-              <Ionicons 
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-                size={20} 
-                color="#999" 
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color="#999"
               />
             </TouchableOpacity>
           </View>
-          
+
           {!isLogin && (
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color="#999"
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={styles.input}
                 placeholder="Confirm Password"
@@ -131,38 +158,40 @@ const AuthScreen = () => {
               />
             </View>
           )}
-          
+
           {isLogin && (
             <TouchableOpacity style={styles.forgotPassword}>
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
           )}
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleAuth}
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {isLogin ? 'Sign In' : 'Sign Up'}
+              {isLogin ? "Sign In" : "Sign Up"}
             </Text>
           </TouchableOpacity>
-          
+
           <View style={styles.switchContainer}>
             <Text style={styles.switchText}>
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              {isLogin
+                ? "Don't have an account? "
+                : "Already have an account? "}
             </Text>
             <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
               <Text style={styles.switchButton}>
-                {isLogin ? 'Sign Up' : 'Sign In'}
+                {isLogin ? "Sign Up" : "Sign In"}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -257,7 +286,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
   },
-})
+});
 
-export default AuthScreen
-
+export default AuthScreen;
