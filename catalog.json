@@ -1,0 +1,92 @@
+{
+  "products": [
+    {
+      "id": "snk-01",
+      "name": "adidas Women's NMD R1 Shoe",
+      "price": 100.0,
+      "description": "Running",
+      "imageUrl": "https://photos.app.goo.gl/Sq1EZwDirpcAkvEz6",
+      "sizes": [4, 6],
+      "colors": ["Red", "Green", "Olive", "Solar Green"],
+      "inStock": true,
+      "isNew": true
+    },
+    {
+      "id": "snk-02",
+      "name": "adidas Men's NMD R1 V2",
+      "price": 100.0,
+      "description": "Walking",
+      "imageUrl": "https://photos.app.goo.gl/Ci27EXYH522pfKaHA",
+      "sizes": [9, 9.5],
+      "colors": ["Solar Yellow", "Black"],
+      "inStock": true,
+      "isNew": true
+    },
+    {
+      "id": "snk-03",
+      "name": "adidas Superstar White Blue Gold",
+      "price": 70.0,
+      "description": "Walking",
+      "imageUrl": "https://photos.app.goo.gl/RwBe538XeuTL429z5",
+      "sizes": [9, 9.5],
+      "colors": ["White"],
+      "inStock": true,
+      "isNew": true
+    },
+    {
+      "id": "snk-04",
+      "name": "adidas Ozelia",
+      "price": 100.0,
+      "description": "Basketball",
+      "imageUrl": "https://photos.app.goo.gl/gji9XmHLNbFPbojX6",
+      "sizes": [9, 9.5],
+      "colors": ["Beige"],
+      "inStock": true,
+      "isNew": true
+    },
+    {
+      "id": "snk-05",
+      "name": "adidas Men's NMD R1 V2",
+      "price": 100.0,
+      "description": "Walking",
+      "imageUrl": "https://photos.app.goo.gl/pqZpxguWzVU1coZh9",
+      "sizes": [9, 9.5],
+      "colors": ["Black"],
+      "inStock": true,
+      "isNew": true
+    },
+    {
+      "id": "snk-06",
+      "name": "adidas Trae Young 3 96 Juegos Olímpicos",
+      "price": 100.0,
+      "description": "Basketball",
+      "imageUrl": "https://photos.app.goo.gl/CvjL6QVst9n7Y1uB9",
+      "sizes": [9, 9.5],
+      "colors": ["Arctic Night", "Cyan Blue", "Black"],
+      "inStock": true,
+      "isNew": true
+    },
+    {
+      "id": "snk-07",
+      "name": "adidas mens X_PLRBOOST Sneaker",
+      "price": 100.0,
+      "description": "Running",
+      "imageUrl": "https://photos.app.goo.gl/p4gfNEzWC7ohYWbCA",
+      "sizes": [10.5],
+      "colors": ["Chalk White", "Core Black", "Off White"],
+      "inStock": true,
+      "isNew": true
+    },
+    {
+      "id": "snk-08",
+      "name": "adidas Women's NMD R1 Shoe",
+      "price": 100.0,
+      "description": "Walking",
+      "imageUrl": "https://photos.app.goo.gl/wcLtosaxx7qGE58q9",
+      "sizes": [4],
+      "colors": ["Green Olive"],
+      "inStock": true,
+      "isNew": true
+    }
+  ]
+}

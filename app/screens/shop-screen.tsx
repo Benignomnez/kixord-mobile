@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,119 +9,216 @@ import {
   Image,
   FlatList,
   SafeAreaView,
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
-import WhatsAppWidget from "../components/whatsapp-widget";
+import {
+  fetchAllProducts,
+  fetchProductsByCategory,
+} from "../utils/firebase-products";
+import { getValidImageUrl, preloadImages } from "../utils/image-utils";
+import ProductItem from "../components/ProductItem";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { initializeApp } from "firebase/app";
+import { firebaseConfig } from "../firebase-config";
+import {
+  getAllProducts,
+  forceSync,
+  clearProductCache,
+} from "../utils/dynamic-data-sync";
 
-// Sample data
+// Initialize Firebase
+initializeApp(firebaseConfig);
+const db = getFirestore();
+
+// Categories data
 const categories = [
-  { id: "1", name: "Run" },
-  { id: "2", name: "Athletic" },
-  { id: "3", name: "Hot Deals" },
-  { id: "4", name: "Exclusive" },
+  { id: "all", name: "All", icon: "apps" },
+  { id: "running", name: "Running", icon: "directions-run" },
+  { id: "walking", name: "Walking", icon: "directions-walk" },
+  { id: "basketball", name: "Basketball", icon: "sports-basketball" },
 ];
 
-const products = [
-  {
-    id: "1",
-    name: "LIGHTWEIGHT RUNNING CASUAL SNEAKERS SHOE",
-    price: 250.0,
-    image:
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=640",
-    isNew: true,
-    category: "Man Sneakers - 7,8",
-  },
-  {
-    id: "2",
-    name: "URBAN STREET STYLE PREMIUM SNEAKERS",
-    price: 199.99,
-    image:
-      "https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=640",
-    isNew: true,
-    category: "Man Sneakers - 8,9",
-  },
-  {
-    id: "3",
-    name: "CLASSIC RETRO ATHLETIC SHOES",
-    price: 175.5,
-    image:
-      "https://images.unsplash.com/photo-1600269452121-4f2416e55c28?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=640",
-    isNew: false,
-    category: "Man Sneakers - 9,10",
-  },
-  {
-    id: "4",
-    name: "PREMIUM COMFORT WALKING SHOES",
-    price: 220.0,
-    image:
-      "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=640",
-    isNew: false,
-    category: "Man Sneakers - 8,9,10",
-  },
-];
+// Add interface for component props
+interface ShopScreenProps {
+  navigation: any;
+  route: any;
+}
 
-const ShopScreen = ({ navigation }) => {
-  const [selectedCategory, setSelectedCategory] = useState("1");
-  const [favorites, setFavorites] = useState([]);
+const ShopScreen = ({ navigation, route }: ShopScreenProps) => {
+  const [products, setProducts] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const toggleFavorite = (productId) => {
-    if (favorites.includes(productId)) {
-      setFavorites(favorites.filter((id) => id !== productId));
-    } else {
-      setFavorites([...favorites, productId]);
+  // Check if a category was passed from navigation params
+  useEffect(() => {
+    if (route.params?.category) {
+      setSelectedCategory(route.params.category);
+    }
+  }, [route.params]);
+
+  // Load products
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  // Filter products when category or products change
+  useEffect(() => {
+    if (products.length > 0) {
+      filterProductsByCategory(selectedCategory, products);
+    }
+  }, [selectedCategory, products]);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log("Loading all products directly from Firestore...");
+
+      // Get products from Firestore
+      const allProducts = await fetchAllProducts();
+
+      // Log product categories for debugging
+      allProducts.forEach((product) => {
+        console.log(`Product ${product.id} has category: ${product.category}`);
+      });
+
+      console.log(`Loaded ${allProducts.length} products from Firestore`);
+      setProducts(allProducts);
+
+      // Filter products if a category is selected
+      if (selectedCategory && selectedCategory !== "all") {
+        filterProductsByCategory(selectedCategory, allProducts);
+      } else {
+        setFilteredProducts(allProducts);
+      }
+    } catch (error) {
+      console.error("Error loading products:", error);
+      setError("Failed to load products. Pull down to refresh.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const renderCategoryItem = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.categoryItem,
-        selectedCategory === item.id && styles.selectedCategoryItem,
-      ]}
-      onPress={() => setSelectedCategory(item.id)}
-    >
-      <Text
-        style={[
-          styles.categoryText,
-          selectedCategory === item.id && styles.selectedCategoryText,
-        ]}
-      >
-        {item.name}
-      </Text>
-    </TouchableOpacity>
-  );
+  const filterProductsByCategory = (category: string, productsList: any[]) => {
+    if (!productsList || productsList.length === 0) {
+      setFilteredProducts([]);
+      return;
+    }
 
-  const renderProductItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.productCard}
-      onPress={() => navigation.navigate("ProductDetail", { product: item })}
-    >
-      {item.isNew && (
-        <View style={styles.newBadge}>
-          <Text style={styles.newBadgeText}>New</Text>
-        </View>
-      )}
-      <TouchableOpacity
-        style={styles.favoriteButton}
-        onPress={() => toggleFavorite(item.id)}
-      >
-        <Ionicons
-          name={favorites.includes(item.id) ? "heart" : "heart-outline"}
-          size={24}
-          color={favorites.includes(item.id) ? "#E32636" : "#000"}
-        />
-      </TouchableOpacity>
-      <Image source={{ uri: item.image }} style={styles.productImage} />
-      <View style={styles.productInfo}>
-        <Text style={styles.productName} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
-        <Text style={styles.productCategory}>{item.category}</Text>
+    if (!category || category === "all") {
+      setFilteredProducts(productsList);
+      return;
+    }
+
+    // If we need products from a specific category, try to load directly from Firebase first
+    if (category !== "all") {
+      fetchProductsByCategory(category)
+        .then((categoryProducts) => {
+          if (categoryProducts && categoryProducts.length > 0) {
+            console.log(
+              `Loaded ${categoryProducts.length} products directly for category ${category}`
+            );
+            setFilteredProducts(categoryProducts);
+            return;
+          }
+
+          // Fallback to local filtering if direct category fetch returns no results
+          const filtered = productsList.filter(
+            (product) => product.category === category
+          );
+
+          console.log(
+            `Filtered ${filtered.length} products for category: ${category}`
+          );
+          setFilteredProducts(filtered);
+        })
+        .catch((error) => {
+          console.error(`Error fetching category ${category}:`, error);
+          // Fallback to local filtering
+          const filtered = productsList.filter(
+            (product) => product.category === category
+          );
+          setFilteredProducts(filtered);
+        });
+    } else {
+      setFilteredProducts(productsList);
+    }
+  };
+
+  // Handle manual refresh
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      console.log("Manually refreshing shop screen data...");
+
+      // Clear all caches to force fresh data load
+      await clearProductCache();
+
+      // Fetch products directly from Firestore
+      await loadProducts();
+
+      // Update last refresh time
+      console.log("Shop screen refresh complete");
+    } catch (error) {
+      console.error("Error refreshing shop data:", error);
+      setError("Failed to refresh. Pull down to try again.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleManualCacheClear = async () => {
+    try {
+      console.log("Manually clearing all product caches...");
+      await clearProductCache();
+      alert("Cache cleared! Pull down to reload fresh data.");
+    } catch (error) {
+      console.error("Failed to clear cache:", error);
+    }
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    console.log(`Selected category: ${categoryId}`);
+    setSelectedCategory(categoryId);
+  };
+
+  const handleProductPress = (product: any) => {
+    navigation.navigate("ProductDetail", { product });
+  };
+
+  const toggleFavorite = (productId: string) => {
+    setFavorites((prev) => ({
+      ...prev,
+      [productId]: !prev[productId],
+    }));
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#0A74FF" />
+        <Text style={styles.loaderText}>Loading products...</Text>
       </View>
-    </TouchableOpacity>
-  );
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <MaterialIcons name="error-outline" size={50} color="red" />
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -132,35 +229,84 @@ const ShopScreen = ({ navigation }) => {
           style={styles.searchButton}
           onPress={() => navigation.navigate("Search")}
         >
-          <Ionicons name="search" size={24} color="#000" />
+          <Ionicons name="search" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        horizontal
-        data={categories}
-        renderItem={renderCategoryItem}
-        keyExtractor={(item) => item.id}
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesList}
-      />
+      {/* Category filter */}
+      <View style={styles.categoryFilterContainer}>
+        <View style={styles.categoryFilterScroll}>
+          {categories.map((category) => (
+            <TouchableOpacity
+              key={category.id}
+              style={[
+                styles.categoryFilterItem,
+                selectedCategory === category.id &&
+                  styles.selectedCategoryFilterItem,
+              ]}
+              onPress={() => handleCategorySelect(category.id)}
+            >
+              <MaterialIcons
+                name={category.icon as any}
+                size={28}
+                color={selectedCategory === category.id ? "#fff" : "#333"}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
-      <FlatList
-        data={products}
-        renderItem={renderProductItem}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.productsGrid}
-      />
+      {/* Debug Button - Remove in production */}
+      <TouchableOpacity
+        style={styles.debugButton}
+        onPress={handleManualCacheClear}
+      >
+        <Text style={styles.debugButtonText}>Debug: Clear Cache</Text>
+      </TouchableOpacity>
 
-      <WhatsAppWidget
-        phoneNumber="18499255780"
-        companyName="KIXORD"
-        message="Hi! I'm interested in your sneakers."
-        position="bottomRight"
-        welcomeMessage="👋 Welcome to KIXORD! How can we help you find the perfect sneakers today?"
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0A74FF" />
+          <Text style={styles.loadingText}>Loading Products...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredProducts}
+          renderItem={({ item }) => (
+            <ProductItem
+              item={item}
+              onPress={() => handleProductPress(item)}
+              isFavorite={!!favorites[item.id]}
+              onToggleFavorite={toggleFavorite}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          contentContainerStyle={styles.productGrid}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <MaterialIcons name="category" size={60} color="#ccc" />
+              <Text style={styles.emptyText}>
+                No products found in this category
+              </Text>
+              <TouchableOpacity
+                style={styles.viewAllButton}
+                onPress={() => setSelectedCategory("all")}
+              >
+                <Text style={styles.viewAllButtonText}>View All Products</Text>
+              </TouchableOpacity>
+            </View>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#0A74FF"]}
+            />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -168,14 +314,15 @@ const ShopScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "#f5f5f5",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 15,
+    backgroundColor: "#000",
   },
   headerTitle: {
     fontSize: 24,
@@ -190,96 +337,122 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  categoriesList: {
-    maxHeight: 50,
-    marginBottom: 10,
+  categoryFilterContainer: {
+    backgroundColor: "#fff",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
-  categoryItem: {
+  categoryFilterScroll: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginHorizontal: 4,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  categoryFilterItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: 20,
-    backgroundColor: "#333",
-    marginLeft: 10,
-  },
-  selectedCategoryItem: {
-    backgroundColor: "#FFFFFF",
-  },
-  categoryText: {
-    color: "#FFFFFF",
-    fontWeight: "500",
-  },
-  selectedCategoryText: {
-    color: "#000000",
-    fontWeight: "bold",
-  },
-  productsGrid: {
-    paddingHorizontal: 8,
-    paddingBottom: 20,
-  },
-  productCard: {
+    backgroundColor: "#f0f0f0",
     flex: 1,
-    margin: 8,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    overflow: "hidden",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    position: "relative",
-  },
-  newBadge: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    backgroundColor: "#E32636",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    zIndex: 1,
-  },
-  newBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  favoriteButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: "center",
+    marginHorizontal: 6,
     alignItems: "center",
+    justifyContent: "center",
+    minWidth: 50,
+    height: 50,
   },
-  productImage: {
-    width: "100%",
-    height: 150,
-    resizeMode: "cover",
+  selectedCategoryFilterItem: {
+    backgroundColor: "#0A74FF",
   },
-  productInfo: {
+  categoryFilterText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#333",
+    marginTop: 4,
+  },
+  selectedCategoryFilterText: {
+    color: "#fff",
+  },
+  listContent: {
     padding: 12,
   },
-  productName: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 6,
-    height: 40,
+  row: {
+    justifyContent: "space-between",
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
-  productPrice: {
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  loaderText: {
+    marginTop: 10,
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#E32636",
-    marginBottom: 4,
+    color: "#0A74FF",
   },
-  productCategory: {
-    fontSize: 12,
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "red",
+    textAlign: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+    marginTop: 60,
+  },
+  emptyText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#999",
+    marginBottom: 20,
+  },
+  viewAllButton: {
+    backgroundColor: "#0A74FF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  viewAllButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#0A74FF",
+  },
+  productGrid: {
+    padding: 16,
+  },
+  debugButton: {
+    backgroundColor: "#f0f0f0",
+    padding: 8,
+    margin: 8,
+    borderRadius: 4,
+    alignSelf: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  debugButtonText: {
     color: "#666",
+    fontSize: 12,
   },
 });
 

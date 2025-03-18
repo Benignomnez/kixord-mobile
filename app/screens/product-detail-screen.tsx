@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,19 +10,24 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Dimensions,
+  ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import WhatsAppWidget from "../components/whatsapp-widget";
 import ProductReview from "../components/product-review";
+import { fetchProductById } from "../utils/firebase-products";
 
 const { width } = Dimensions.get("window");
 
 const ProductDetailScreen = ({ route, navigation }) => {
-  const { product } = route.params;
+  const { product: initialProduct } = route.params;
+  const [product, setProduct] = useState(initialProduct);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const sizes = ["7", "8", "9", "10", "11"];
   const colors = [
@@ -31,14 +36,45 @@ const ProductDetailScreen = ({ route, navigation }) => {
     { name: "Red", code: "#E32636" },
   ];
 
+  useEffect(() => {
+    // Load the full product details from Firebase
+    const loadProductDetails = async () => {
+      try {
+        setLoading(true);
+        const productDetails = await fetchProductById(initialProduct.id);
+        if (productDetails) {
+          setProduct(productDetails);
+
+          // Set default selected size and color if available
+          if (productDetails.sizes && productDetails.sizes.length > 0) {
+            setSelectedSize(productDetails.sizes[0]);
+          }
+
+          if (productDetails.colors && productDetails.colors.length > 0) {
+            setSelectedColor(productDetails.colors[0]);
+          }
+
+          setError(null);
+        } else {
+          setError("Product not found");
+        }
+      } catch (err) {
+        console.error("Error loading product details:", err);
+        setError("Failed to load product details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProductDetails();
+  }, [initialProduct.id]);
+
   const incrementQuantity = () => setQuantity(quantity + 1);
   const decrementQuantity = () => {
     if (quantity > 1) {
       setQuantity(quantity - 1);
     }
   };
-
-  const toggleFavorite = () => setIsFavorite(!isFavorite);
 
   const renderProductContent = () => (
     <>
@@ -47,14 +83,11 @@ const ProductDetailScreen = ({ route, navigation }) => {
       <View style={styles.detailsContainer}>
         <View style={styles.header}>
           <Text style={styles.productName}>{product.name}</Text>
-          <TouchableOpacity
-            onPress={toggleFavorite}
-            style={styles.favoriteButton}
-          >
+          <TouchableOpacity style={styles.favoriteButton}>
             <Ionicons
-              name={isFavorite ? "heart" : "heart-outline"}
+              name={product.isFavorite ? "heart" : "heart-outline"}
               size={24}
-              color={isFavorite ? "#E32636" : "#000"}
+              color={product.isFavorite ? "#E32636" : "#000"}
             />
           </TouchableOpacity>
         </View>
@@ -154,6 +187,28 @@ const ProductDetailScreen = ({ route, navigation }) => {
       </View>
     </>
   );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#E32636" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -310,6 +365,35 @@ const styles = StyleSheet.create({
   addToCartText: {
     color: "#FFF",
     fontSize: 16,
+    fontWeight: "bold",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#E32636",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  backButton: {
+    backgroundColor: "#E32636",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  backButtonText: {
+    color: "#FFFFFF",
     fontWeight: "bold",
   },
 });
